@@ -47,35 +47,33 @@ class WorldTraj(object):
         # WaypointTraj object you already wrote in the first project. However,
         # you probably need to improve it using techniques we have learned this
         # semester.
-
         # STUDENT CODE HERE
+        self.speed = 2.5
+
+
     def normalize_grid_direction(v):
-        # For voxel grids, reduce vector to step direction (-1,0,1)
+    # For voxel grids, reduce vector to step direction (-1,0,1)
         return (
-            0 if v[0] == 0 else int(v[0] / abs(v[0])),
-            0 if v[1] == 0 else int(v[1] / abs(v[1])),
-            0 if v[2] == 0 else int(v[2] / abs(v[2]))
-        )
+        0 if v[0] == 0 else int(v[0] / abs(v[0])),
+        0 if v[1] == 0 else int(v[1] / abs(v[1])),
+        0 if v[2] == 0 else int(v[2] / abs(v[2]))
+    )
 
     def clean_collinear(self, path):
         if len(path) < 3:
             return path
 
-        cleaned_collinear = path[[0]]
-
+        cleaned = [path[0]]
         for i in range(1, len(path) - 1):
-            A = cleaned_collinear[-1]
+            A = cleaned[-1]
             B = path[i]
             C = path[i + 1]
-
-            dir1 = WorldTraj.normalize_grid_direction(B-A)
-            dir2 = WorldTraj.normalize_grid_direction(C-B)
-
+            dir1 = self.normalize_grid_direction(B - A)
+            dir2 = self.normalize_grid_direction(C - B)
             if dir1 != dir2:
-                np.append(cleaned_collinear, B)
-
-        np.append(cleaned_collinear, path[-1])
-        return cleaned_collinear
+                cleaned.append(B)
+        cleaned.append(path[-1])
+        return np.array(cleaned)
 
     # implement LOS checker?
 
@@ -104,7 +102,30 @@ class WorldTraj(object):
             a = np.linalg.solve(M, b)
             coeffs.append(a)
 
-        return np.array(coeffs)  # shape (3,6)
+        return np.array(coeffs)
+
+    def eval_quintic_3d(self, coeffs, t):
+        t2 = t * t
+        t3 = t2 * t
+        t4 = t3 * t
+        t5 = t4 * t
+
+        x = np.zeros(3)
+        x_dot = np.zeros(3)
+        x_ddot = np.zeros(3)
+        x_dddot = np.zeros(3)
+        x_ddddot = np.zeros(3)
+
+        for d in range(3):
+            a0, a1, a2, a3, a4, a5 = coeffs[d]
+
+            x[d] = a0 + a1 * t + a2 * t2 + a3 * t3 + a4 * t4+ a5 * t5
+            x_dot[d] = a1 + 2 * a2 * t + 3 * a3 * t2 + 4 * a4 * t3+ 5 * a5 * t4
+            x_ddot[d] = 2 * a2 + 6 * a3 * t + 12 * a4 * t2 + 20 * a5 * t3
+            x_dddot[d] = 6 * a3 + 24 * a4 * t + 60 * a5 * t2
+            x_ddddot[d] = 24 * a4 + 120 * a5 * t
+
+        return x, x_dot, x_ddot, x_dddot, x_ddddot
 
     def update(self, t):
         """
@@ -133,8 +154,16 @@ class WorldTraj(object):
         # STUDENT CODE HERE
         cleaned_path = self.clean_collinear(self.path)
 
-        start_times = self.times
-        if t >= self.times[-1]:
+        n_points = len(cleaned_path)
+        start_times = np.zeros(n_points)
+        seg_times = np.zeros(n_points-1)
+        start_times[0] = 0
+        for i in range(n_points - 1):
+            distance = np.linalg.norm(cleaned_path[i+1] - cleaned_path[i])
+            seg_times[i] = distance/self.speed
+            start_times[i+1] = start_times[i] + seg_times[i]
+
+        if t >= start_times[-1]:
             x = self.points[-1]
             return {
                 'x': x,
@@ -147,22 +176,32 @@ class WorldTraj(object):
             }
 
         curr_seg = 0
-        for i in range(len(self.points) - 1):
+        for i in range(len(cleaned_path) - 1):
             if start_times[i] <= t < start_times[i + 1]:
                 curr_seg = i
                 break
 
         t0 = start_times[curr_seg]
-        segment_total = start_times[curr_seg + 1] - start_times[curr_seg]
         dt = t - t0
 
-        start_pos = self.points[curr_seg]
-        end_pos = self.points[curr_seg + 1]
-        diff = end_pos - start_pos
-        vect = diff / np.linalg.norm(diff)
-        x_dot = self.speed*vect
-        x = start_pos + x_dot*dt
+        # conditions
+        vi = []
+        vj = []
+        a = np.zeros(3)
+        if curr_seg == 0:
+            vi.append(cleaned_path[curr_seg]/seg_times[curr_seg])
+            pi = cleaned_path[curr_seg]
+            vj.append((cleaned_path[curr_seg+2]-cleaned_path[curr_seg])/ (seg_times[curr_seg]+seg_times[curr_seg+1]))
+            pj = cleaned_path[curr_seg+1]
+        else:
+            vi = vj[-1]
+            pi = cleaned_path[curr_seg]
+            vj.append((cleaned_path[curr_seg+2]-cleaned_path[curr_seg]) / (seg_times[curr_seg]+seg_times[curr_seg+1]))
+            pj = cleaned_path[curr_seg+1]
 
+        coeffs = self.quintic_3d(pi, vi, a, pj, vj, a, seg_times[curr_seg])
+
+        x, x_dot, x_ddot, x_dddot, x_ddddot = self.eval_quintic_3d(coeffs, dt)
 
         flat_output = { 'x':x, 'x_dot':x_dot, 'x_ddot':x_ddot, 'x_dddot':x_dddot, 'x_ddddot':x_ddddot,
                         'yaw':yaw, 'yaw_dot':yaw_dot}
