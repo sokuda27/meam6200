@@ -1,0 +1,12 @@
+{
+    "bounds": {"extents": [0, 5, 0, 5, 0, 5]},
+        "blocks": [
+            {"extents": [0, 1.5, 0, 3, 2.45, 2.55]},
+            {"extents": [3.5, 5, 0, 5, 2.45, 2.55]}
+    ],
+    "start": [1.0, 1.0, 1.0],
+    "goal": [3.0, 4.5, 4.0],
+    "resolution": [0.3, 4, 1],
+    "margin": 0.0,
+    "algorithms": ["dijkstra", "astar"]
+}
