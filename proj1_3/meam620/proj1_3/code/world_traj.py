@@ -72,12 +72,39 @@ class WorldTraj(object):
             dir2 = WorldTraj.normalize_grid_direction(C-B)
 
             if dir1 != dir2:
-                cleaned_collinear.append(B)
+                np.append(cleaned_collinear, B)
 
-        cleaned_collinear.append(path[-1])
+        np.append(cleaned_collinear, path[-1])
         return cleaned_collinear
 
     # implement LOS checker?
+
+    def quintic_3d(self, p0, v0, a0, pf, vf, af, T):
+
+        M = np.array([
+            [1, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0],
+            [0, 0, 2, 0, 0, 0],
+            [1, T, T ** 2, T ** 3, T ** 4, T ** 5],
+            [0, 1, 2 * T, 3 * T ** 2, 4 * T ** 3, 5 * T ** 4],
+            [0, 0, 2, 6 * T, 12 * T ** 2, 20 * T ** 3]
+        ])
+
+        coeffs = []
+
+        for dim in range(3):
+            b = np.array([
+                p0[dim],
+                v0[dim],
+                a0[dim],
+                pf[dim],
+                vf[dim],
+                af[dim]
+            ])
+            a = np.linalg.solve(M, b)
+            coeffs.append(a)
+
+        return np.array(coeffs)  # shape (3,6)
 
     def update(self, t):
         """
@@ -105,6 +132,36 @@ class WorldTraj(object):
 
         # STUDENT CODE HERE
         cleaned_path = self.clean_collinear(self.path)
+
+        start_times = self.times
+        if t >= self.times[-1]:
+            x = self.points[-1]
+            return {
+                'x': x,
+                'x_dot': np.zeros(3),
+                'x_ddot': np.zeros(3),
+                'x_dddot': np.zeros(3),
+                'x_ddddot': np.zeros(3),
+                'yaw': 0,
+                'yaw_dot': 0
+            }
+
+        curr_seg = 0
+        for i in range(len(self.points) - 1):
+            if start_times[i] <= t < start_times[i + 1]:
+                curr_seg = i
+                break
+
+        t0 = start_times[curr_seg]
+        segment_total = start_times[curr_seg + 1] - start_times[curr_seg]
+        dt = t - t0
+
+        start_pos = self.points[curr_seg]
+        end_pos = self.points[curr_seg + 1]
+        diff = end_pos - start_pos
+        vect = diff / np.linalg.norm(diff)
+        x_dot = self.speed*vect
+        x = start_pos + x_dot*dt
 
 
         flat_output = { 'x':x, 'x_dot':x_dot, 'x_ddot':x_ddot, 'x_dddot':x_dddot, 'x_ddddot':x_ddddot,
