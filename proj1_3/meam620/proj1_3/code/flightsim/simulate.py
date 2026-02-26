@@ -195,7 +195,7 @@ def sanitize_trajectory_dic(trajectory_dic):
     """
     Return a sanitized version of the trajectory dictionary where all of the elements are np arrays
     """
-    trajectory_dic['x'] = np.asarray(trajectory_dic['x'], np.float46).ravel()
+    trajectory_dic['x'] = np.asarray(trajectory_dic['x'], np.float64).ravel()
     trajectory_dic['x_dot'] = np.asarray(trajectory_dic['x_dot'], np.float64).ravel()
     trajectory_dic['x_ddot'] = np.asarray(trajectory_dic['x_ddot'], np.float64).ravel()
     trajectory_dic['x_dddot'] = np.asarray(trajectory_dic['x_dddot'], np.float64).ravel()

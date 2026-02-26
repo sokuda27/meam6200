@@ -1,7 +1,9 @@
 import numpy as np
 from unicodedata import normalize
 
-from graph_search import graph_search
+from .graph_search import graph_search
+from .occupancy_map import OccupancyMap
+
 
 class WorldTraj(object):
     """
@@ -47,17 +49,56 @@ class WorldTraj(object):
         # WaypointTraj object you already wrote in the first project. However,
         # you probably need to improve it using techniques we have learned this
         # semester.
+
         # STUDENT CODE HERE
-        self.speed = 2.5
+        self.occ_map = OccupancyMap(world, self.resolution, self.margin)
+        self.speed = 2.75
+        self.points = self.clean_collinear(self.path)
+        n = len(self.points)
 
+        self.seg_times = np.zeros(n - 1)
+        for i in range(n - 1):
+            dist = np.linalg.norm(self.points[i + 1] - self.points[i])
+            self.seg_times[i] = max(dist / self.speed, 1e-6)
 
-    def normalize_grid_direction(v):
-    # For voxel grids, reduce vector to step direction (-1,0,1)
+        self.start_times = np.zeros(n)
+        for i in range(n - 1):
+            self.start_times[i + 1] = self.start_times[i] + self.seg_times[i]
+
+        self.v = np.zeros((n, 3))
+        for i in range(1, n - 1):
+            self.v[i] = (
+                (self.points[i + 1] - self.points[i - 1]) /
+                (self.seg_times[i] + self.seg_times[i - 1])
+            )
+
+        self.v[0] = np.zeros(3)
+        self.v[-1] = np.zeros(3)
+
+        self.coeffs = []
+        for i in range(n - 1):
+            c = self.quintic(
+                self.points[i],     self.v[i],     np.zeros(3),
+                self.points[i + 1], self.v[i + 1], np.zeros(3),
+                self.seg_times[i]
+            )
+            self.coeffs.append(c)
+
+    def normalize_grid_direction(self, v):
         return (
         0 if v[0] == 0 else int(v[0] / abs(v[0])),
         0 if v[1] == 0 else int(v[1] / abs(v[1])),
         0 if v[2] == 0 else int(v[2] / abs(v[2]))
     )
+
+    def check_los(self, p1, p2):
+        dist = np.linalg.norm(p2 - p1)
+        num_steps = int(np.ceil(dist / (min(self.occ_map.resolution) * 0.5)))
+        for i in range(num_steps + 1):
+            p = p1 + (p2 - p1) * (i / num_steps)
+            if self.occ_map.is_occupied_metric(p):
+                return False
+        return True
 
     def clean_collinear(self, path):
         if len(path) < 3:
@@ -68,16 +109,19 @@ class WorldTraj(object):
             A = cleaned[-1]
             B = path[i]
             C = path[i + 1]
-            dir1 = self.normalize_grid_direction(B - A)
-            dir2 = self.normalize_grid_direction(C - B)
-            if dir1 != dir2:
+            seg1 = B-A
+            seg2 = C-B
+            dir1 = self.normalize_grid_direction(seg1)
+            dir2 = self.normalize_grid_direction(seg2)
+            # if dir1 != dir2 or not self.check_los(A, C):
+            if dir1 != dir2 or not self.check_los(A, C):
                 cleaned.append(B)
         cleaned.append(path[-1])
         return np.array(cleaned)
 
     # implement LOS checker?
 
-    def quintic_3d(self, p0, v0, a0, pf, vf, af, T):
+    def quintic(self, p0, v0, a0, pf, vf, af, T):
 
         M = np.array([
             [1, 0, 0, 0, 0, 0],
@@ -101,10 +145,9 @@ class WorldTraj(object):
             ])
             a = np.linalg.solve(M, b)
             coeffs.append(a)
-
         return np.array(coeffs)
 
-    def eval_quintic_3d(self, coeffs, t):
+    def eval_quintic(self, coeffs, t):
         t2 = t * t
         t3 = t2 * t
         t4 = t3 * t
@@ -148,25 +191,14 @@ class WorldTraj(object):
         x_ddot   = np.zeros((3,))
         x_dddot  = np.zeros((3,))
         x_ddddot = np.zeros((3,))
-        yaw = 0
-        yaw_dot = 0
+        yaw = 0.
+        yaw_dot = 0.
 
         # STUDENT CODE HERE
-        cleaned_path = self.clean_collinear(self.path)
 
-        n_points = len(cleaned_path)
-        start_times = np.zeros(n_points)
-        seg_times = np.zeros(n_points-1)
-        start_times[0] = 0
-        for i in range(n_points - 1):
-            distance = np.linalg.norm(cleaned_path[i+1] - cleaned_path[i])
-            seg_times[i] = distance/self.speed
-            start_times[i+1] = start_times[i] + seg_times[i]
-
-        if t >= start_times[-1]:
-            x = self.points[-1]
+        if t >= self.start_times[-1]:
             return {
-                'x': x,
+                'x': self.points[-1],
                 'x_dot': np.zeros(3),
                 'x_ddot': np.zeros(3),
                 'x_dddot': np.zeros(3),
@@ -176,32 +208,15 @@ class WorldTraj(object):
             }
 
         curr_seg = 0
-        for i in range(len(cleaned_path) - 1):
-            if start_times[i] <= t < start_times[i + 1]:
+        for i in range(len(self.start_times) - 1):
+            if self.start_times[i] <= t < self.start_times[i + 1]:
                 curr_seg = i
                 break
 
-        t0 = start_times[curr_seg]
+        t0 = self.start_times[curr_seg]
         dt = t - t0
 
-        # conditions
-        vi = []
-        vj = []
-        a = np.zeros(3)
-        if curr_seg == 0:
-            vi.append(cleaned_path[curr_seg]/seg_times[curr_seg])
-            pi = cleaned_path[curr_seg]
-            vj.append((cleaned_path[curr_seg+2]-cleaned_path[curr_seg])/ (seg_times[curr_seg]+seg_times[curr_seg+1]))
-            pj = cleaned_path[curr_seg+1]
-        else:
-            vi = vj[-1]
-            pi = cleaned_path[curr_seg]
-            vj.append((cleaned_path[curr_seg+2]-cleaned_path[curr_seg]) / (seg_times[curr_seg]+seg_times[curr_seg+1]))
-            pj = cleaned_path[curr_seg+1]
-
-        coeffs = self.quintic_3d(pi, vi, a, pj, vj, a, seg_times[curr_seg])
-
-        x, x_dot, x_ddot, x_dddot, x_ddddot = self.eval_quintic_3d(coeffs, dt)
+        x, x_dot, x_ddot, x_dddot, x_ddddot = self.eval_quintic(self.coeffs[curr_seg], dt)
 
         flat_output = { 'x':x, 'x_dot':x_dot, 'x_ddot':x_ddot, 'x_dddot':x_dddot, 'x_ddddot':x_ddddot,
                         'yaw':yaw, 'yaw_dot':yaw_dot}

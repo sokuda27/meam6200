@@ -71,10 +71,10 @@ class SE3Control(object):
         cmd_q = np.zeros((4,))
 
         # STUDENT CODE HERE
-        K_p = np.diag([6., 6., 12.0])
-        K_d = np.diag([4.0, 4.0, 5.0])
+        K_p = np.diag([6.5, 6.5, 12.])
+        K_d = np.diag([4., 4., 5.0])
 
-        K_r = np.diag([1000.0, 1000.0, 120.0])
+        K_r = np.diag([1000.0, 1000.0, 100.0])
         K_w = np.diag([100.0, 100.0, 20.0])
 
         e_pos = flat_output['x'] - state['x']
@@ -99,6 +99,17 @@ class SE3Control(object):
             e_R_matrix[0, 2],
             e_R_matrix[1, 0]
         ])
+
+        # F_des_dot = self.mass * flat_output['x_dddot']
+        # b3_des_dot = (F_des_dot - (F_des_dot @ b3_des)*b3_des) / np.linalg.norm(F_des)
+        # a_dot = np.array([-np.sin(flat_output['yaw']*flat_output['yaw_dot']), np.cos(flat_output['yaw']*flat_output['yaw_dot']), 0])
+        # cross_dot = np.cross(b3_des, a_dot) + np.cross(b3_des_dot, a)
+        # b2_des_dot = (cross_dot - np.dot(cross_dot, b2_des)*b2_des) / np.linalg.norm(cross_dot)
+        # b1_des_dot = np.cross(b2_des_dot, b3_des) + np.cross(b3_des_dot, b2_des)
+        #
+        # R_des_dot = np.column_stack((b1_des_dot, b2_des_dot, b3_des_dot))
+        # omega_hat = R_des.T @ R_des_dot
+        # w_des = np.array([omega_hat[2, 1], omega_hat[0, 2], omega_hat[1, 0]])
         w_des = np.zeros(3)
         e_w = state['w'] - w_des
 
