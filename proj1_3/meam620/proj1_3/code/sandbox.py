@@ -22,7 +22,9 @@ from world_traj import WorldTraj
 # mpl.rcParams['figure.dpi'] = 200
 
 # Choose a test example file. You should write your own example files too!
-filename = '../util/test_window.json'
+filename = '../util/mymap_slalom.json'
+# filename = '../util/mymap.json'
+# filename = '../util/test_over_under.json'
 
 # Load the test example.
 file = Path(inspect.getsourcefile(lambda:0)).parent.resolve() / '..' / 'util' / filename
@@ -51,8 +53,8 @@ planning_end_time = time.time()
 # world.draw(ax)
 # fig = plt.figure('occupancy grid')
 # ax = Axes3Ds(fig)
-# resolution = SET YOUR RESOLUTION HERE
-# margin = SET YOUR MARGIN HERE
+# resolution = [0.5, 0.5, 0.5]
+# margin = 0.5
 # oc = OccupancyMap(world, resolution, margin)
 # oc.draw(ax)
 # ax.plot([start[0]], [start[1]], [start[2]], 'go', markersize=10, markeredgewidth=3, markerfacecolor='none')
@@ -133,67 +135,67 @@ ax.legend(handles=[
     Line2D([], [], color='black', linewidth=2, label='Trajectory')],
     loc='upper right')
 
-# Position and Velocity vs. Time
-(fig, axes) = plt.subplots(nrows=2, ncols=1, sharex=True, num='Position vs Time')
-x = state['x']
-x_des = flat['x']
-ax = axes[0]
-ax.plot(sim_time, x_des[:,0], 'r', sim_time, x_des[:,1], 'g', sim_time, x_des[:,2], 'b')
-ax.plot(sim_time, x[:,0], 'r.',    sim_time, x[:,1], 'g.',    sim_time, x[:,2], 'b.')
-ax.legend(('x', 'y', 'z'), loc='upper right')
-ax.set_ylabel('position, m')
-ax.grid('major')
-ax.set_title('Position')
-v = state['v']
-v_des = flat['x_dot']
-ax = axes[1]
-ax.plot(sim_time, v_des[:,0], 'r', sim_time, v_des[:,1], 'g', sim_time, v_des[:,2], 'b')
-ax.plot(sim_time, v[:,0], 'r.',    sim_time, v[:,1], 'g.',    sim_time, v[:,2], 'b.')
-ax.legend(('x', 'y', 'z'), loc='upper right')
-ax.set_ylabel('velocity, m/s')
-ax.set_xlabel('time, s')
-ax.grid('major')
-
-# Orientation and Angular Velocity vs. Time
-(fig, axes) = plt.subplots(nrows=2, ncols=1, sharex=True, num='Orientation vs Time')
-q_des = control['cmd_q']
-q = state['q']
-ax = axes[0]
-ax.plot(sim_time, q_des[:,0], 'r', sim_time, q_des[:,1], 'g', sim_time, q_des[:,2], 'b', sim_time, q_des[:,3], 'k')
-ax.plot(sim_time, q[:,0], 'r.',    sim_time, q[:,1], 'g.',    sim_time, q[:,2], 'b.',    sim_time, q[:,3],     'k.')
-ax.legend(('i', 'j', 'k', 'w'), loc='upper right')
-ax.set_ylabel('quaternion')
-ax.set_xlabel('time, s')
-ax.grid('major')
-w = state['w']
-ax = axes[1]
-ax.plot(sim_time, w[:,0], 'r.', sim_time, w[:,1], 'g.', sim_time, w[:,2], 'b.')
-ax.legend(('x', 'y', 'z'), loc='upper right')
-ax.set_ylabel('angular velocity, rad/s')
-ax.set_xlabel('time, s')
-ax.grid('major')
-
-# Commands vs. Time
-(fig, axes) = plt.subplots(nrows=3, ncols=1, sharex=True, num='Commands vs Time')
-s = control['cmd_motor_speeds']
-ax = axes[0]
-ax.plot(sim_time, s[:,0], 'r.', sim_time, s[:,1], 'g.', sim_time, s[:,2], 'b.', sim_time, s[:,3], 'k.')
-ax.legend(('1', '2', '3', '4'), loc='upper right')
-ax.set_ylabel('motor speeds, rad/s')
-ax.grid('major')
-ax.set_title('Commands')
-M = control['cmd_moment']
-ax = axes[1]
-ax.plot(sim_time, M[:,0], 'r.', sim_time, M[:,1], 'g.', sim_time, M[:,2], 'b.')
-ax.legend(('x', 'y', 'z'), loc='upper right')
-ax.set_ylabel('moment, N*m')
-ax.grid('major')
-T = control['cmd_thrust']
-ax = axes[2]
-ax.plot(sim_time, T, 'k.')
-ax.set_ylabel('thrust, N')
-ax.set_xlabel('time, s')
-ax.grid('major')
+# # Position and Velocity vs. Time
+# (fig, axes) = plt.subplots(nrows=2, ncols=1, sharex=True, num='Position vs Time')
+# x = state['x']
+# x_des = flat['x']
+# ax = axes[0]
+# ax.plot(sim_time, x_des[:,0], 'r', sim_time, x_des[:,1], 'g', sim_time, x_des[:,2], 'b')
+# ax.plot(sim_time, x[:,0], 'r.',    sim_time, x[:,1], 'g.',    sim_time, x[:,2], 'b.')
+# ax.legend(('x', 'y', 'z'), loc='upper right')
+# ax.set_ylabel('position, m')
+# ax.grid('major')
+# ax.set_title('Position')
+# v = state['v']
+# v_des = flat['x_dot']
+# ax = axes[1]
+# ax.plot(sim_time, v_des[:,0], 'r', sim_time, v_des[:,1], 'g', sim_time, v_des[:,2], 'b')
+# ax.plot(sim_time, v[:,0], 'r.',    sim_time, v[:,1], 'g.',    sim_time, v[:,2], 'b.')
+# ax.legend(('x', 'y', 'z'), loc='upper right')
+# ax.set_ylabel('velocity, m/s')
+# ax.set_xlabel('time, s')
+# ax.grid('major')
+#
+# # Orientation and Angular Velocity vs. Time
+# (fig, axes) = plt.subplots(nrows=2, ncols=1, sharex=True, num='Orientation vs Time')
+# q_des = control['cmd_q']
+# q = state['q']
+# ax = axes[0]
+# ax.plot(sim_time, q_des[:,0], 'r', sim_time, q_des[:,1], 'g', sim_time, q_des[:,2], 'b', sim_time, q_des[:,3], 'k')
+# ax.plot(sim_time, q[:,0], 'r.',    sim_time, q[:,1], 'g.',    sim_time, q[:,2], 'b.',    sim_time, q[:,3],     'k.')
+# ax.legend(('i', 'j', 'k', 'w'), loc='upper right')
+# ax.set_ylabel('quaternion')
+# ax.set_xlabel('time, s')
+# ax.grid('major')
+# w = state['w']
+# ax = axes[1]
+# ax.plot(sim_time, w[:,0], 'r.', sim_time, w[:,1], 'g.', sim_time, w[:,2], 'b.')
+# ax.legend(('x', 'y', 'z'), loc='upper right')
+# ax.set_ylabel('angular velocity, rad/s')
+# ax.set_xlabel('time, s')
+# ax.grid('major')
+#
+# # Commands vs. Time
+# (fig, axes) = plt.subplots(nrows=3, ncols=1, sharex=True, num='Commands vs Time')
+# s = control['cmd_motor_speeds']
+# ax = axes[0]
+# ax.plot(sim_time, s[:,0], 'r.', sim_time, s[:,1], 'g.', sim_time, s[:,2], 'b.', sim_time, s[:,3], 'k.')
+# ax.legend(('1', '2', '3', '4'), loc='upper right')
+# ax.set_ylabel('motor speeds, rad/s')
+# ax.grid('major')
+# ax.set_title('Commands')
+# M = control['cmd_moment']
+# ax = axes[1]
+# ax.plot(sim_time, M[:,0], 'r.', sim_time, M[:,1], 'g.', sim_time, M[:,2], 'b.')
+# ax.legend(('x', 'y', 'z'), loc='upper right')
+# ax.set_ylabel('moment, N*m')
+# ax.grid('major')
+# T = control['cmd_thrust']
+# ax = axes[2]
+# ax.plot(sim_time, T, 'k.')
+# ax.set_ylabel('thrust, N')
+# ax.set_xlabel('time, s')
+# ax.grid('major')
 
 # 3D Paths
 fig = plt.figure('3D Path')

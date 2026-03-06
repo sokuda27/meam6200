@@ -1,6 +1,7 @@
 import heapq
 import numpy as np
 
+# from occupancy_map import OccupancyMap # Recommended.
 from .occupancy_map import OccupancyMap # Recommended.
 
 def graph_search(world, resolution, margin, start, goal, astar):

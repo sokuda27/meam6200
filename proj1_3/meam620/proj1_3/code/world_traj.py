@@ -1,6 +1,8 @@
 import numpy as np
 from unicodedata import normalize
 
+# from graph_search import graph_search
+# from occupancy_map import OccupancyMap
 from .graph_search import graph_search
 from .occupancy_map import OccupancyMap
 
@@ -52,14 +54,14 @@ class WorldTraj(object):
 
         # STUDENT CODE HERE
         self.occ_map = OccupancyMap(world, self.resolution, self.margin)
-        self.speed = 2.75
+        self.speed = 2.5
         self.points = self.clean_collinear(self.path)
         n = len(self.points)
 
         self.seg_times = np.zeros(n - 1)
         for i in range(n - 1):
             dist = np.linalg.norm(self.points[i + 1] - self.points[i])
-            self.seg_times[i] = max(dist / self.speed, 1e-6)
+            self.seg_times[i] = max(dist / self.speed, 0.2)
 
         self.start_times = np.zeros(n)
         for i in range(n - 1):
@@ -113,8 +115,8 @@ class WorldTraj(object):
             seg2 = C-B
             dir1 = self.normalize_grid_direction(seg1)
             dir2 = self.normalize_grid_direction(seg2)
-            # if dir1 != dir2 or not self.check_los(A, C):
             if dir1 != dir2 or not self.check_los(A, C):
+            # if dir1 != dir2:
                 cleaned.append(B)
         cleaned.append(path[-1])
         return np.array(cleaned)
