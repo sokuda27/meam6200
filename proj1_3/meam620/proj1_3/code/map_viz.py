@@ -62,6 +62,6 @@ def visualize_json_map(json_path):
     plt.show()
 
 # To use:
-filename = '../util/mymap.json'
+filename = '../util/maze_2026_3.json'
 file = Path(inspect.getsourcefile(lambda:0)).parent.resolve() / '..' / 'util' / filename
 visualize_json_map(filename)

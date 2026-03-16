@@ -22,7 +22,7 @@ from world_traj import WorldTraj
 # mpl.rcParams['figure.dpi'] = 200
 
 # Choose a test example file. You should write your own example files too!
-filename = '../util/mymap_slalom.json'
+filename = '../util/maze_2026_3.json'
 # filename = '../util/mymap.json'
 # filename = '../util/test_over_under.json'
 

@@ -1,10 +1,10 @@
 import numpy as np
 from unicodedata import normalize
 
-# from graph_search import graph_search
-# from occupancy_map import OccupancyMap
-from .graph_search import graph_search
-from .occupancy_map import OccupancyMap
+from graph_search import graph_search
+from occupancy_map import OccupancyMap
+# from .graph_search import graph_search
+# from .occupancy_map import OccupancyMap
 
 
 class WorldTraj(object):
@@ -32,8 +32,8 @@ class WorldTraj(object):
         # planning. In the previous project these were provided to you; now you
         # must chose them for yourself. Your may try these default values, but
         # you should experiment with them!
-        self.resolution = np.array([0.25, 0.25, 0.25])
-        self.margin = 0.5
+        self.resolution = np.array([0.1, 0.1, 0.1])
+        self.margin = 0.4
 
         # You must store the dense path returned from your Dijkstra or AStar
         # graph search algorithm as an object member. You will need it for
